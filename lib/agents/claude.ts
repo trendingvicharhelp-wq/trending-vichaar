@@ -243,17 +243,20 @@ export async function callWithWebSearch(opts: BaseCall): Promise<string> {
         systemInstruction: system,
         maxOutputTokens: maxTokens,
         ...(withSearch ? { tools: [{ googleSearch: {} }] } : {}),
+        // Disable thinking on 2.5-tier models so the budget goes to the JSON output.
+        ...(model.includes("2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
       },
     });
     logger?.debug(`${label} usage: ${JSON.stringify((response as any)?.usageMetadata ?? {})}`);
     return textOf(response);
   };
 
+  const disabled = process.env.AGENT_DISABLE_WEB_SEARCH === "1";
   return withRetry(
     label,
     async () => {
       try {
-        return await run(true);
+        return await run(!disabled);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         // Only fall back for "tool/grounding not supported" type errors, never rate limits.
