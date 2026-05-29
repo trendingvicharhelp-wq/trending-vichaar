@@ -8,7 +8,10 @@
  * Use this on a VPS / always-on box / Docker container. On Vercel, prefer the
  * platform cron in vercel.json hitting /api/agent/run instead.
  */
-import "dotenv/config";
+import { config } from "dotenv";
+// Load .env.local first (Next.js convention), then .env as fallback.
+config({ path: ".env.local" });
+config();
 import cron from "node-cron";
 import { SCHEDULE } from "@/lib/agents/config";
 import { runPipeline } from "@/lib/agents/orchestrator";

@@ -192,16 +192,24 @@ export async function callStructured<T>(
   );
 }
 
-/** Plain long-form text generation (the article writer). */
+/**
+ * Plain long-form text generation (the article writer). Thinking is disabled so
+ * the entire output-token budget goes to the article, not internal reasoning —
+ * otherwise Gemini 2.5 spends most of the budget "thinking" and under-writes.
+ */
 export async function callText(opts: BaseCall): Promise<string> {
-  const { system, user, model, maxTokens = 16000, logger, label = "callText" } = opts;
+  const { system, user, model, maxTokens = 20000, logger, label = "callText" } = opts;
   return withRetry(
     label,
     async () => {
       const response = await client().models.generateContent({
         model,
         contents: user,
-        config: { systemInstruction: system, maxOutputTokens: maxTokens },
+        config: {
+          systemInstruction: system,
+          maxOutputTokens: maxTokens,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       });
       logger?.debug(`${label} usage: ${JSON.stringify((response as any)?.usageMetadata ?? {})}`);
       return textOf(response);
