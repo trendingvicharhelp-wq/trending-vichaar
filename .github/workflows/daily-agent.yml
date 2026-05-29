@@ -1,18 +1,21 @@
 name: Daily Content Agent
 
-# Publishes one evergreen post per day at 9:00 PM IST.
-# 21:00 IST == 15:30 UTC. GitHub Actions cron is always in UTC and only runs
-# on the repository's DEFAULT branch. Scheduled runs can be delayed a few
-# minutes under load — that's fine for a daily job.
+# Publishes one evergreen post every day at 9:00 PM IST, hands-off.
+# 21:00 IST == 15:30 UTC. GitHub Actions cron is UTC and runs on the DEFAULT
+# branch. Scheduled runs can be delayed a few minutes under load — fine daily.
 on:
   schedule:
     - cron: "30 15 * * *"
-  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+  workflow_dispatch: {} # manual "Run workflow" button in the Actions tab
 
-# Don't pile up overlapping runs.
+# Never overlap runs.
 concurrency:
   group: daily-content-agent
   cancel-in-progress: false
+
+# Needed for the heartbeat commit that keeps the schedule alive.
+permissions:
+  contents: write
 
 jobs:
   publish:
@@ -31,11 +34,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run content agent (research → write → publish)
+      - name: Run content agent (research → write → publish, with one retry)
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-        run: npm run agent
+          # Reliability first: research from model knowledge (no live grounding),
+          # which avoids the free-tier grounded-JSON failures. Evergreen topics
+          # don't need live search. Remove this to re-enable Google Search.
+          AGENT_DISABLE_WEB_SEARCH: "1"
+        run: npm run agent || (echo "First attempt failed — retrying in 90s" && sleep 90 && npm run agent)
+
+      - name: Keep schedule alive (heartbeat)
+        if: always()
+        run: |
+          mkdir -p .github
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .github/last-run.txt
+          git config user.name "trending-vichaar-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/last-run.txt
+          git commit -m "chore: daily agent heartbeat [skip ci]" || exit 0
+          git push || true
