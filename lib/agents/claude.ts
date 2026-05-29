@@ -1,44 +1,47 @@
 /**
- * Thin, resilient wrapper around the Anthropic SDK for the content pipeline.
+ * AI provider client for the content pipeline.
  *
- * Exposes three call shapes the agents need:
+ * NOTE: despite the filename, this now wraps **Google Gemini** (`@google/genai`).
+ * The exported function names are kept stable so the nine agents and the
+ * orchestrator don't need to change — this file is the single integration
+ * point. To switch providers again, you only edit this file + the model IDs
+ * in config.ts.
+ *
+ * Exposes:
  *   - callStructured()    — strict JSON output validated against a schema
- *   - callWithWebSearch() — server-side web search, returns prose text
+ *   - callWithWebSearch() — Google Search grounding, returns prose text
  *   - callText()          — plain text generation (long-form article)
- *
- * Plus helpers: extractJson() for parsing model text, and withRetry() for
- * exponential-backoff retries on transient (429 / 5xx / network) failures.
- *
- * Large, reusable system prompts are sent as a cached content block
- * (cache_control: ephemeral) so repeated daily runs pay the ~0.1x cache-read
- * price instead of full input price on the shared brand/safety preamble.
+ * Plus: extractJson() and withRetry().
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { getApiKey, RETRY } from "@/lib/agents/config";
 import type { Logger } from "@/lib/agents/logger";
 
-let _client: Anthropic | null = null;
+let _client: GoogleGenAI | null = null;
 
-export function client(): Anthropic {
-  if (!_client) _client = new Anthropic({ apiKey: getApiKey() });
+export function client(): GoogleGenAI {
+  if (!_client) _client = new GoogleGenAI({ apiKey: getApiKey() });
   return _client;
 }
-
-/** Web-search tool version. Override if your account pins a different one. */
-const WEB_SEARCH_TOOL = process.env.AGENT_WEB_SEARCH_TOOL || "web_search_20260209";
 
 /* ------------------------------------------------------------------ *
  * Retry
  * ------------------------------------------------------------------ */
 
+function statusOf(err: unknown): number {
+  const anyErr = err as { status?: number; code?: number };
+  return Number(anyErr?.status ?? anyErr?.code ?? 0);
+}
+
 function isRetryable(err: unknown): boolean {
-  if (err instanceof Anthropic.APIError) {
-    const status = err.status ?? 0;
-    return status === 429 || status >= 500;
-  }
-  // Network errors (no status) are worth a retry.
-  return err instanceof Error && /(ECONN|ETIMEDOUT|fetch failed|network)/i.test(err.message);
+  const status = statusOf(err);
+  if (status === 429 || status >= 500) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  // Gemini surfaces rate limits / transient issues by name too.
+  return /(429|RESOURCE_EXHAUSTED|UNAVAILABLE|INTERNAL|DEADLINE|ECONN|ETIMEDOUT|fetch failed|overloaded|503|500)/i.test(
+    msg
+  );
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -72,21 +75,12 @@ export async function withRetry<T>(
  * Helpers
  * ------------------------------------------------------------------ */
 
-/** Concatenate all text blocks from a message response. */
-function textOf(message: Anthropic.Message): string {
-  return message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("\n")
-    .trim();
-}
-
 /**
  * Robustly pull a JSON value out of model text: strips ```json fences, then
  * falls back to the first balanced {...} or [...] span. Throws on failure.
  */
 export function extractJson<T = unknown>(text: string): T {
-  const cleaned = text.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+  const cleaned = (text || "").replace(/```json\s*/gi, "").replace(/```/g, "").trim();
   try {
     return JSON.parse(cleaned) as T;
   } catch {
@@ -109,42 +103,51 @@ export function extractJson<T = unknown>(text: string): T {
       else if (ch === open) depth++;
       else if (ch === close) {
         depth--;
-        if (depth === 0) {
-          const span = cleaned.slice(start, i + 1);
-          return JSON.parse(span) as T;
-        }
+        if (depth === 0) return JSON.parse(cleaned.slice(start, i + 1)) as T;
       }
     }
   }
   throw new Error("Could not extract JSON from model response.");
 }
 
-function systemBlocks(system: string): Anthropic.TextBlockParam[] {
-  // Single cached block — the brand/safety preamble is large and reused.
-  return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+/**
+ * Convert our lowercase JSON-Schema (as the agents author it) into Gemini's
+ * responseSchema shape: uppercase `type`, only the supported keywords. Numeric
+ * / length constraints and additionalProperties are dropped.
+ */
+const TYPE_MAP: Record<string, string> = {
+  object: "OBJECT",
+  array: "ARRAY",
+  string: "STRING",
+  number: "NUMBER",
+  integer: "INTEGER",
+  boolean: "BOOLEAN",
+  null: "NULL",
+};
+
+function toGeminiSchema(node: any): any {
+  if (!node || typeof node !== "object") return node;
+  const out: Record<string, any> = {};
+  if (typeof node.type === "string") out.type = TYPE_MAP[node.type] || node.type.toUpperCase();
+  if (node.enum) out.enum = node.enum;
+  if (node.description) out.description = node.description;
+  if (node.items) out.items = toGeminiSchema(node.items);
+  if (node.properties) {
+    out.properties = {};
+    for (const [k, v] of Object.entries(node.properties)) out.properties[k] = toGeminiSchema(v);
+    // Preserve a stable field order for the model.
+    out.propertyOrdering = Object.keys(node.properties);
+  }
+  if (Array.isArray(node.required)) out.required = node.required;
+  return out;
 }
 
-/**
- * Strip JSON-Schema keywords that structured outputs don't support
- * (numeric/length/array constraints, patterns). Validation of those is done in
- * the agents themselves; sending them risks a 400. Returns a deep-cleaned copy.
- */
-const UNSUPPORTED_SCHEMA_KEYS = new Set([
-  "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
-  "minLength", "maxLength", "minItems", "maxItems", "uniqueItems", "pattern",
-]);
-
-function sanitizeSchema(node: unknown): unknown {
-  if (Array.isArray(node)) return node.map(sanitizeSchema);
-  if (node && typeof node === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(node)) {
-      if (UNSUPPORTED_SCHEMA_KEYS.has(k)) continue;
-      out[k] = sanitizeSchema(v);
-    }
-    return out;
-  }
-  return node;
+function textOf(response: any): string {
+  // The SDK exposes a convenience getter; fall back to manual extraction.
+  const t = typeof response?.text === "string" ? response.text : response?.text?.();
+  if (t) return String(t).trim();
+  const parts = response?.candidates?.[0]?.content?.parts ?? [];
+  return parts.map((p: any) => p?.text ?? "").join("").trim();
 }
 
 /* ------------------------------------------------------------------ *
@@ -161,8 +164,8 @@ export interface BaseCall {
 }
 
 /**
- * Strict structured output. Constrains the model to `schema` (JSON Schema) via
- * output_config and returns the parsed object. Do NOT use with web search.
+ * Strict structured output. Constrains Gemini to JSON matching `schema` and
+ * returns the parsed object.
  */
 export async function callStructured<T>(
   opts: BaseCall & { schema: Record<string, unknown> }
@@ -171,76 +174,64 @@ export async function callStructured<T>(
   return withRetry(
     label,
     async () => {
-      const params: Record<string, unknown> = {
+      const response = await client().models.generateContent({
         model,
-        max_tokens: maxTokens,
-        system: systemBlocks(system),
-        messages: [{ role: "user", content: user }],
-        output_config: { format: { type: "json_schema", schema: sanitizeSchema(schema) } },
-      };
-      const message = (await client().messages.create(params as any)) as Anthropic.Message;
-      const raw = textOf(message);
-      logger?.debug(`${label} usage: ${JSON.stringify(message.usage)}`);
+        contents: user,
+        config: {
+          systemInstruction: system,
+          maxOutputTokens: maxTokens,
+          responseMimeType: "application/json",
+          responseSchema: toGeminiSchema(schema),
+        },
+      });
+      const raw = textOf(response);
+      logger?.debug(`${label} usage: ${JSON.stringify((response as any)?.usageMetadata ?? {})}`);
       return extractJson<T>(raw);
     },
     logger
   );
 }
 
-/**
- * Plain long-form text generation. Streams under the hood to avoid HTTP
- * timeouts on large outputs (the article writer needs room).
- */
+/** Plain long-form text generation (the article writer). */
 export async function callText(opts: BaseCall): Promise<string> {
   const { system, user, model, maxTokens = 16000, logger, label = "callText" } = opts;
   return withRetry(
     label,
     async () => {
-      const params: Record<string, unknown> = {
+      const response = await client().models.generateContent({
         model,
-        max_tokens: maxTokens,
-        system: systemBlocks(system),
-        messages: [{ role: "user", content: user }],
-      };
-      const stream = client().messages.stream(params as any);
-      const message = await stream.finalMessage();
-      logger?.debug(`${label} usage: ${JSON.stringify(message.usage)}`);
-      return textOf(message);
+        contents: user,
+        config: { systemInstruction: system, maxOutputTokens: maxTokens },
+      });
+      logger?.debug(`${label} usage: ${JSON.stringify((response as any)?.usageMetadata ?? {})}`);
+      return textOf(response);
     },
     logger
   );
 }
 
 /**
- * Web-search-backed generation. Declares the server-side web_search tool, lets
- * Claude run its search loop (handling `pause_turn`), and returns the final
- * prose text. If the tool version isn't available on the account, it retries
- * once WITHOUT search so the pipeline degrades gracefully to model knowledge.
+ * Web-search-backed generation via Gemini's Google Search grounding. Returns
+ * the final prose text. The agents that use this instruct the model to return
+ * ONLY JSON, which the caller then parses with extractJson(). Falls back to a
+ * plain (ungrounded) call if grounding is unavailable, so the pipeline degrades
+ * gracefully to model knowledge.
  */
 export async function callWithWebSearch(opts: BaseCall): Promise<string> {
   const { system, user, model, maxTokens = 8000, logger, label = "callWithWebSearch" } = opts;
 
   const run = async (withSearch: boolean): Promise<string> => {
-    const params: Record<string, unknown> = {
+    const response = await client().models.generateContent({
       model,
-      max_tokens: maxTokens,
-      system: systemBlocks(system),
-      messages: [{ role: "user", content: user }] as Anthropic.MessageParam[],
-    };
-    if (withSearch) params.tools = [{ type: WEB_SEARCH_TOOL, name: "web_search" }];
-
-    const messages = params.messages as Anthropic.MessageParam[];
-    // Server tools can pause; resume up to a few times.
-    for (let i = 0; i < 6; i++) {
-      const message = (await client().messages.create(params as any)) as Anthropic.Message;
-      logger?.debug(`${label} stop=${message.stop_reason} usage=${JSON.stringify(message.usage)}`);
-      if (message.stop_reason === "pause_turn") {
-        messages.push({ role: "assistant", content: message.content });
-        continue;
-      }
-      return textOf(message);
-    }
-    throw new Error(`${label}: exceeded web-search continuation limit`);
+      contents: user,
+      config: {
+        systemInstruction: system,
+        maxOutputTokens: maxTokens,
+        ...(withSearch ? { tools: [{ googleSearch: {} }] } : {}),
+      },
+    });
+    logger?.debug(`${label} usage: ${JSON.stringify((response as any)?.usageMetadata ?? {})}`);
+    return textOf(response);
   };
 
   return withRetry(
@@ -249,8 +240,10 @@ export async function callWithWebSearch(opts: BaseCall): Promise<string> {
       try {
         return await run(true);
       } catch (err) {
-        if (err instanceof Anthropic.BadRequestError) {
-          logger?.warn(`${label}: web search unavailable (${err.message}); falling back to model knowledge`);
+        const msg = err instanceof Error ? err.message : String(err);
+        // Only fall back for "tool/grounding not supported" type errors, never rate limits.
+        if (!isRetryable(err) && /(tool|grounding|search|not supported|invalid)/i.test(msg)) {
+          logger?.warn(`${label}: web search unavailable (${msg}); falling back to model knowledge`);
           return await run(false);
         }
         throw err;

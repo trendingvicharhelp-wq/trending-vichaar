@@ -7,16 +7,21 @@
  * nine agents stay consistent.
  */
 
-/** Claude model IDs, split by job to balance cost against quality on a daily run. */
+/**
+ * Gemini model IDs, split by job. Defaults to gemini-2.5-flash everywhere —
+ * it's fast, free-tier friendly, and supports Google Search grounding. For
+ * higher writing quality you can set AGENT_MODEL_WRITER=gemini-2.5-pro, but
+ * note the free tier has tighter rate limits on the pro model.
+ */
 export const MODELS = {
-  /** The headline article. Quality matters most here. */
-  writer: process.env.AGENT_MODEL_WRITER || "claude-opus-4-8",
-  /** Web-research + SEO. Needs the web_search dynamic-filtering tier. */
-  research: process.env.AGENT_MODEL_RESEARCH || "claude-sonnet-4-6",
+  /** The headline article. */
+  writer: process.env.AGENT_MODEL_WRITER || "gemini-2.5-flash",
+  /** Web-research (uses Google Search grounding). */
+  research: process.env.AGENT_MODEL_RESEARCH || "gemini-2.5-flash",
   /** SEO analysis / optimisation. */
-  seo: process.env.AGENT_MODEL_SEO || "claude-sonnet-4-6",
+  seo: process.env.AGENT_MODEL_SEO || "gemini-2.5-flash",
   /** Cheap, high-volume utility calls (topic pick, image prompt, tagging). */
-  utility: process.env.AGENT_MODEL_UTILITY || "claude-haiku-4-5",
+  utility: process.env.AGENT_MODEL_UTILITY || "gemini-2.5-flash",
 } as const;
 
 /** The agent's author identity on published posts. */
@@ -88,7 +93,7 @@ ${FORBIDDEN_TOPICS.map((t) => `- ${t}`).join("\n")}
 
 If a topic touches any forbidden area, reject it and choose a safe evergreen alternative.`;
 
-/** Retry behaviour for transient Claude API / network failures. */
+/** Retry behaviour for transient API / network failures. */
 export const RETRY = {
   /** Per-agent-step retries on retryable errors (429 / 5xx / network). */
   maxAttempts: Number(process.env.AGENT_MAX_ATTEMPTS || 3),
@@ -115,12 +120,12 @@ export const DUPLICATE_TITLE_THRESHOLD = 0.6;
 /** Shared secret guarding the /api/agent/run trigger endpoint. */
 export const TRIGGER_SECRET = process.env.AGENT_TRIGGER_SECRET || "";
 
-/** Resolve the Anthropic API key, throwing a clear error if missing. */
+/** Resolve the Gemini API key, throwing a clear error if missing. */
 export function getApiKey(): string {
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!key) {
     throw new Error(
-      "ANTHROPIC_API_KEY is not set. Add it to .env.local before running the content agent."
+      "GEMINI_API_KEY is not set. Get a free key at https://aistudio.google.com and add it to .env.local before running the content agent."
     );
   }
   return key;

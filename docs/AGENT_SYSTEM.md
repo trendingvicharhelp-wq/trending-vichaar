@@ -2,7 +2,7 @@
 
 A self-driving content pipeline that researches, writes, SEO-optimises, and
 publishes **one evergreen blog post every day at 9:00 PM IST** — no human in the
-loop. Built on the Claude API, Next.js, Node.js, and MongoDB.
+loop. Built on Google Gemini, Next.js, Node.js, and MongoDB.
 
 ---
 
@@ -53,7 +53,7 @@ Each agent maps to the brief's STEP 1–10:
 lib/agents/
   config.ts              # models, allowed categories, banned topics, schedule, retry
   types.ts               # the typed payload contract between agents
-  claude.ts              # Anthropic client: callStructured / callWithWebSearch / callText
+  claude.ts              # AI provider client (Gemini): callStructured / callWithWebSearch / callText
   prompts.ts             # shared brand-voice + safety system preamble (cached)
   scoring.ts             # Flesch readability + composite SEO score (no LLM)
   dedup.ts               # title tokenisation + Jaccard similarity
@@ -116,27 +116,31 @@ status:"published", publishedAt, readingTime, seo{title,description,keywords}`.
 
 ---
 
-## 4. Claude API implementation
+## 4. AI implementation (Google Gemini)
 
-- **SDK:** `@anthropic-ai/sdk`, via `client.messages.create` / `.stream`.
-- **Model split** (cost-aware daily run — override via env):
-  | Job | Model | Why |
-  |---|---|---|
-  | Content Writer | `claude-opus-4-8` | headline quality |
-  | Trend + Deep Research | `claude-sonnet-4-6` | web-search dynamic-filtering tier |
-  | SEO Analysis / Optimizer | `claude-sonnet-4-6` | solid reasoning, lower cost |
-  | Topic / Image / utility | `claude-haiku-4-5` | cheap, well-constrained calls |
-- **Prompt caching:** the large brand/safety preamble (`prompts.ts`) is sent as a
-  single `cache_control: { type: "ephemeral" }` block, so repeated daily runs pay
-  the ~0.1× cache-read price on the shared prefix.
-- **Web search:** the server-side `web_search_20260209` tool. The wrapper handles
-  the `pause_turn` server-loop and **degrades gracefully** to model knowledge if
-  the tool isn't enabled on the account.
-- **Structured output:** `output_config.format` with a JSON schema per agent;
-  unsupported JSON-Schema keywords are stripped centrally before sending, and the
-  result is parsed defensively (`extractJson`).
-- **Retry/error handling:** `withRetry` retries 429/5xx/network with exponential
-  backoff (3 attempts); non-retryable errors fail fast with a clear message.
+The whole pipeline talks to the model through ONE file — `lib/agents/claude.ts`
+(named for history; it wraps Gemini). Swapping providers means editing only that
+file + the model IDs in `config.ts`.
+
+- **SDK:** `@google/genai`, via `client.models.generateContent`.
+- **Model split** (override via env) — defaults to `gemini-2.5-flash` everywhere
+  (fast, free-tier friendly, supports Search grounding). Set
+  `AGENT_MODEL_WRITER=gemini-2.5-pro` for higher writing quality (tighter free
+  limits).
+  | Job | Default model |
+  |---|---|
+  | Content Writer | `gemini-2.5-flash` |
+  | Trend + Deep Research | `gemini-2.5-flash` (Google Search grounding) |
+  | SEO Analysis / Optimizer | `gemini-2.5-flash` |
+  | Topic / Image / utility | `gemini-2.5-flash` |
+- **Web search:** Gemini's **Google Search grounding** (`tools: [{ googleSearch: {} }]`)
+  on the research agents; **degrades gracefully** to model knowledge if grounding
+  is unavailable.
+- **Structured output:** `responseMimeType: "application/json"` + a per-agent
+  `responseSchema` (the agents' JSON schemas are converted to Gemini's schema
+  shape automatically); results are parsed defensively (`extractJson`).
+- **Retry/error handling:** `withRetry` retries 429 / 5xx / `RESOURCE_EXHAUSTED` /
+  network with exponential backoff (3 attempts); non-retryable errors fail fast.
 
 ---
 
@@ -164,14 +168,14 @@ status:"published", publishedAt, readingTime, seo{title,description,keywords}`.
 
 ### Prerequisites
 1. **MongoDB** — set `MONGODB_URI` (Atlas or self-hosted). Required to publish.
-2. **Anthropic API key** — set `ANTHROPIC_API_KEY`.
+2. **Gemini API key** — set `GEMINI_API_KEY` (free at aistudio.google.com).
 3. **Trigger secret** — set `AGENT_TRIGGER_SECRET` (any long random string).
 
 Copy `.env.example` → `.env.local` and fill these in. Then seed the admin/sample
 data once if you haven't: `npm run seed`.
 
 ### Option A — Vercel (recommended)
-1. Set `MONGODB_URI`, `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_SITE_URL`, and
+1. Set `MONGODB_URI`, `GEMINI_API_KEY`, `NEXT_PUBLIC_SITE_URL`, and
    `CRON_SECRET` (Vercel sends it as `Authorization: Bearer`) in Project →
    Settings → Environment Variables.
 2. `vercel.json` already declares the cron:

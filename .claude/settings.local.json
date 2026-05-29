@@ -39,7 +39,13 @@
       "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | %{size_download} bytes\\\\n\" \"http://localhost:3000/blog/brutalism-is-back\")",
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(grep -iE \"\\\\.env\\($|\\\\.local\\)\")"
+      "Bash(grep -iE \"\\\\.env\\($|\\\\.local\\)\")",
+      "Bash(git branch *)",
+      "Bash(git -c core.autocrlf=true commit -q -m ' *)",
+      "Bash(git config *)",
+      "Bash(git remote *)",
+      "Bash(git ls-remote *)",
+      "Bash(node -e \"const c=require\\('crypto'\\);console.log\\('JWT_SECRET=        '+c.randomBytes\\(32\\).toString\\('base64'\\)\\);console.log\\('AGENT_TRIGGER_SECRET='+c.randomBytes\\(24\\).toString\\('hex'\\)\\);\")"
     ]
   }
 }

@@ -1,8 +1,8 @@
 # Deploying Trending Vichaar (free stack)
 
 **Stack:** Vercel (site, free) · MongoDB Atlas (database, free) · GitHub Actions
-(daily content agent, free). Total cost: **₹0** at normal volume — you only pay
-Anthropic for the daily Claude API usage.
+(daily content agent, free). Total cost: **₹0** — the AI runs on Google
+Gemini's free tier.
 
 Everything in the repo is already prepared. You just do the account steps below.
 
@@ -48,7 +48,7 @@ Keep this string — it's your `MONGODB_URI`.
    | Name | Value |
    |---|---|
    | `MONGODB_URI` | your Atlas string from step 1 |
-   | `ANTHROPIC_API_KEY` | your Anthropic key (`sk-ant-…`) |
+   | `GEMINI_API_KEY` | your free Gemini key from aistudio.google.com |
    | `JWT_SECRET` | a long random string (`openssl rand -base64 32`) |
    | `AGENT_TRIGGER_SECRET` | another long random string |
    | `NEXT_PUBLIC_SITE_URL` | your live URL, e.g. `https://trending-vichaar.vercel.app` |
@@ -71,7 +71,7 @@ The workflow at `.github/workflows/daily-agent.yml` runs the agent every day at
 
 1. In your GitHub repo: **Settings → Secrets and variables → Actions → New
    repository secret**, and add each of these:
-   `MONGODB_URI`, `ANTHROPIC_API_KEY`, `JWT_SECRET`, `AGENT_TRIGGER_SECRET`,
+   `MONGODB_URI`, `GEMINI_API_KEY`, `JWT_SECRET`, `AGENT_TRIGGER_SECRET`,
    `NEXT_PUBLIC_SITE_URL`.
 2. That's it. The job runs daily on the **default branch**.
 3. **Test it now:** repo → **Actions → Daily Content Agent → Run workflow**.

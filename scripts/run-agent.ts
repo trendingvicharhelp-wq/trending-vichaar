@@ -5,7 +5,7 @@
  *   npm run agent          # research, write, and PUBLISH one post
  *   npm run agent:dry      # full pipeline, but no database writes
  *
- * Requires ANTHROPIC_API_KEY (and MONGODB_URI unless --dry-run).
+ * Requires GEMINI_API_KEY (and MONGODB_URI unless --dry-run).
  */
 import "dotenv/config";
 import { runPipeline } from "@/lib/agents/orchestrator";

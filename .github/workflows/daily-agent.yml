@@ -34,7 +34,7 @@ jobs:
       - name: Run content agent (research → write → publish)
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
