@@ -1,0 +1,12 @@
+{
+  "name": "Trending Vichaar",
+  "short_name": "Vichaar",
+  "description": "Daily trends, creative ideas, AI and digital culture.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#09090b",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

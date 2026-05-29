@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <radialGradient id="g" cx="80%" cy="20%" r="80%">
+      <stop offset="0%" stop-color="#FF5E1A" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#09090b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#09090b"/>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <g transform="translate(80, 80)">
+    <rect x="0" y="0" width="64" height="64" rx="16" fill="#fafafa"/>
+    <path d="M14 22h36M20 22v24M44 22v24" stroke="#09090b" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <circle cx="48" cy="18" r="6" fill="#FF5E1A"/>
+  </g>
+  <text x="80" y="320" font-family="'Fraunces', Georgia, serif" font-size="96" font-weight="600" fill="#fafafa">
+    Ideas worth
+  </text>
+  <text x="80" y="430" font-family="'Fraunces', Georgia, serif" font-style="italic" font-size="96" font-weight="600" fill="#FF5E1A">
+    scrolling for.
+  </text>
+  <text x="80" y="540" font-family="Inter, system-ui, sans-serif" font-size="22" letter-spacing="6" fill="#a1a1aa">
+    TRENDING VICHAAR · DAILY TRENDS · AI · DESIGN
+  </text>
+</svg>

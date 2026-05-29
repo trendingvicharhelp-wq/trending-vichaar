@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <rect x="8" y="20" width="40" height="40" rx="12" fill="#09090b"/>
+  <path d="M18 32h20M22 32v16M34 32v16" stroke="#fafafa" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <circle cx="38" cy="28" r="4" fill="#FF5E1A"/>
+  <text x="64" y="46" font-family="'Fraunces', Georgia, serif" font-size="26" font-weight="600" fill="#09090b">
+    Trending<tspan fill="#FF5E1A">.</tspan>Vichaar
+  </text>
+  <text x="64" y="64" font-family="Inter, system-ui, sans-serif" font-size="9" letter-spacing="3" fill="#71717a">
+    IDEAS IN MOTION
+  </text>
+</svg>

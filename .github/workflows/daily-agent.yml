@@ -1,0 +1,41 @@
+name: Daily Content Agent
+
+# Publishes one evergreen post per day at 9:00 PM IST.
+# 21:00 IST == 15:30 UTC. GitHub Actions cron is always in UTC and only runs
+# on the repository's DEFAULT branch. Scheduled runs can be delayed a few
+# minutes under load — that's fine for a daily job.
+on:
+  schedule:
+    - cron: "30 15 * * *"
+  workflow_dispatch: {} # lets you trigger a run manually from the Actions tab
+
+# Don't pile up overlapping runs.
+concurrency:
+  group: daily-content-agent
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run content agent (research → write → publish)
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        run: npm run agent
