@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import "dotenv/config";
+import "@/lib/agents/load-env"; // load .env.local (Next convention) before reading env
 import mongoose from "mongoose";
 import { User } from "../models/User";
 import { Post } from "../models/Post";

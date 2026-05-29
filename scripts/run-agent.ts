@@ -7,10 +7,7 @@
  *
  * Requires GEMINI_API_KEY (and MONGODB_URI unless --dry-run).
  */
-import { config } from "dotenv";
-// Load .env.local first (Next.js convention), then .env as fallback.
-config({ path: ".env.local" });
-config();
+import "@/lib/agents/load-env"; // MUST be first — loads .env.local before DB module
 import { runPipeline } from "@/lib/agents/orchestrator";
 
 const dryRun = process.argv.includes("--dry-run") || process.argv.includes("-d");

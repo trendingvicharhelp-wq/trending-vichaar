@@ -9,7 +9,7 @@
  * broken-out pieces (takeaways, FAQs) the optimizer and publisher reuse.
  */
 
-import { callText, extractJson } from "@/lib/agents/claude";
+import { callStructured } from "@/lib/agents/claude";
 import { MODELS, WORD_RANGE, CATEGORY_NAME_BY_SLUG } from "@/lib/agents/config";
 import { HUMAN_VOICE_RULES, systemFor } from "@/lib/agents/prompts";
 import { wordCount as countWords } from "@/lib/agents/scoring";
@@ -83,17 +83,37 @@ Return ONLY a JSON object (no prose, no code fence) with this exact shape:
   "faqs": [{"question": "...", "answer": "..."}]
 }`;
 
-  // Long output → callText (streams). The model returns JSON text we parse.
-  const raw = await callText({
+  // Structured-output mode guarantees valid JSON escaping for the long Markdown
+  // body; thinkingBudget:0 hands the full token budget to the article.
+  const SCHEMA: Record<string, unknown> = {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      content: { type: "string" },
+      excerpt: { type: "string" },
+      keyTakeaways: { type: "array", items: { type: "string" } },
+      faqs: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { question: { type: "string" }, answer: { type: "string" } },
+          required: ["question", "answer"],
+        },
+      },
+    },
+    required: ["title", "content", "excerpt", "keyTakeaways", "faqs"],
+  };
+
+  const parsed = await callStructured<Omit<GeneratedArticle, "wordCount">>({
     system: SYSTEM,
     user,
     model: MODELS.writer,
-    maxTokens: 16000,
+    schema: SCHEMA,
+    maxTokens: 20000,
+    thinkingBudget: 0,
     logger: ctx.logger,
     label: "content-writer",
   });
-
-  const parsed = extractJson<Omit<GeneratedArticle, "wordCount">>(raw);
   const article: GeneratedArticle = {
     ...parsed,
     keyTakeaways: parsed.keyTakeaways || [],

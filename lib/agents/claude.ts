@@ -161,6 +161,8 @@ export interface BaseCall {
   maxTokens?: number;
   logger?: Logger;
   label?: string;
+  /** Gemini thinking budget. 0 disables thinking (frees the budget for output). */
+  thinkingBudget?: number;
 }
 
 /**
@@ -170,7 +172,7 @@ export interface BaseCall {
 export async function callStructured<T>(
   opts: BaseCall & { schema: Record<string, unknown> }
 ): Promise<T> {
-  const { system, user, model, schema, maxTokens = 8000, logger, label = "callStructured" } = opts;
+  const { system, user, model, schema, maxTokens = 8000, logger, label = "callStructured", thinkingBudget } = opts;
   return withRetry(
     label,
     async () => {
@@ -182,6 +184,10 @@ export async function callStructured<T>(
           maxOutputTokens: maxTokens,
           responseMimeType: "application/json",
           responseSchema: toGeminiSchema(schema),
+          // thinkingConfig is only valid on 2.5-tier models.
+          ...(thinkingBudget !== undefined && model.includes("2.5")
+            ? { thinkingConfig: { thinkingBudget } }
+            : {}),
         },
       });
       const raw = textOf(response);
@@ -208,7 +214,8 @@ export async function callText(opts: BaseCall): Promise<string> {
         config: {
           systemInstruction: system,
           maxOutputTokens: maxTokens,
-          thinkingConfig: { thinkingBudget: 0 },
+          // thinkingConfig is only valid on 2.5-tier models.
+          ...(model.includes("2.5") ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
         },
       });
       logger?.debug(`${label} usage: ${JSON.stringify((response as any)?.usageMetadata ?? {})}`);
