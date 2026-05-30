@@ -23,11 +23,18 @@ import type {
   SeoPackage,
 } from "@/lib/agents/types";
 
-/** Deterministic, royalty-free cover image keyed off the slug. */
-function placeholderCover(slug: string): string {
-  return `https://source.unsplash.com/1600x900/?${encodeURIComponent(
-    slug.replace(/-/g, ",")
-  )}`;
+/**
+ * Build a free, no-API-key AI cover image from the featured-image prompt via
+ * Pollinations. The image is generated on first request and cached thereafter.
+ */
+function aiCover(prompt: string, fallbackTitle: string): string {
+  const text = (prompt || fallbackTitle)
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 480);
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(
+    text
+  )}?width=1600&height=900&nologo=true&model=flux`;
 }
 
 /** Find a slug not already taken in the posts collection. */
@@ -65,13 +72,14 @@ export async function publish(
 
   await connectDB();
   const slug = await uniqueSlug(seo.slug || article.title);
+  const cover = aiCover(image.featuredImagePrompt, article.title);
 
   const doc = await Post.create({
     title: article.title,
     slug,
     excerpt: article.excerpt || makeExcerpt(article.content),
     content: article.content,
-    coverImage: placeholderCover(slug),
+    coverImage: cover,
     category,
     tags: seo.tags?.length ? seo.tags : seo.keywords.slice(0, 6),
     author: { name: AGENT_AUTHOR.name, bio: AGENT_AUTHOR.bio },
@@ -86,8 +94,7 @@ export async function publish(
       title: seo.metaTitle || seo.seoTitle,
       description: seo.metaDescription,
       keywords: seo.keywords,
-      // Store the AI image prompt so it can drive real image generation later.
-      ogImage: "",
+      ogImage: cover,
     },
   });
 
