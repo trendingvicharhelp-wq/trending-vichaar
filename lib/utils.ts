@@ -55,6 +55,8 @@ export const CATEGORY_LIST = [
   { slug: "digital-lifestyle", name: "Digital Lifestyle", emoji: "🌐" },
   { slug: "internet-culture", name: "Internet Culture", emoji: "🔥" },
   { slug: "consumer-products", name: "Trending Products", emoji: "🛍️" },
+  { slug: "cars", name: "Cars & EVs", emoji: "🚗" },
+  { slug: "crypto", name: "Crypto & Blockchain", emoji: "🪙" },
   { slug: "travel", name: "Travel", emoji: "✈️" },
   { slug: "fashion", name: "Fashion", emoji: "👗" },
   { slug: "skincare", name: "Skincare", emoji: "🧴" },

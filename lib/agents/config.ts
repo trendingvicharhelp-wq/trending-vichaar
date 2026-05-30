@@ -56,6 +56,8 @@ export const ALLOWED_CATEGORIES = [
   { slug: "digital-lifestyle", name: "Digital Lifestyle" },
   { slug: "internet-culture", name: "Internet Culture" },
   { slug: "consumer-products", name: "Trending Consumer Products" },
+  { slug: "cars", name: "Cars & EVs" },
+  { slug: "crypto", name: "Crypto & Blockchain (educational)" },
   { slug: "travel", name: "Travel" },
   { slug: "fashion", name: "Fashion" },
   { slug: "skincare", name: "Skincare" },
@@ -91,7 +93,13 @@ ${ALLOWED_CATEGORIES.map((c) => `- ${c.name}`).join("\n")}
 You must NEVER produce, reference, or build content around:
 ${FORBIDDEN_TOPICS.map((t) => `- ${t}`).join("\n")}
 
-If a topic touches any forbidden area, reject it and choose a safe evergreen alternative.`;
+If a topic touches any forbidden area, reject it and choose a safe evergreen alternative.
+
+CATEGORY FRAMING — these categories are allowed ONLY in their evergreen form:
+- Cars & EVs: buying guides, EV vs petrol explainers, car-tech and feature explainers, maintenance/ownership tips, "best X for Y" comparisons. NEVER report new-launch news, release dates, spec leaks, or current on-road prices (they go stale and you have no live data).
+- Crypto & Blockchain: ONLY educational explainers — how blockchain/wallets/staking work, security and scam-avoidance basics, key terminology, real-world use-cases. NEVER give price predictions, market/news updates, "should you buy/sell", investment/trading advice, or token recommendations.
+- AI / AI Tools: lean into practical AI applications and real-world use-cases (what to use, how to use it, workflows) rather than company news.
+Keep everything timeless: a reader should find it just as useful a year from now.`;
 
 /** Retry behaviour for transient API / network failures. */
 export const RETRY = {
