@@ -1,41 +1,49 @@
+import "@/lib/agents/load-env"; // MUST be first — loads .env.local before DB module
 /* eslint-disable no-console */
 /**
- * Manual / one-off runner for the content agent.
+ * Runner for the content agent.
  *
- *   npm run agent          # research, write, and PUBLISH one post
- *   npm run agent:dry      # full pipeline, but no database writes
+ *   npm run agent                 # publish ONE post
+ *   npm run agent -- --max=5      # publish up to 5, stopping when quota runs out
+ *   npm run agent:dry             # full pipeline, no DB writes
+ *
+ * In batch mode it keeps publishing until it reaches --max OR hits the daily
+ * free-tier quota (then it stops gracefully — partial success is still success).
+ * TopicHistory dedup guarantees each post in the batch is a different topic.
  *
  * Requires GEMINI_API_KEY (and MONGODB_URI unless --dry-run).
  */
-import "@/lib/agents/load-env"; // MUST be first — loads .env.local before DB module
 import { runPipeline } from "@/lib/agents/orchestrator";
 
 const dryRun = process.argv.includes("--dry-run") || process.argv.includes("-d");
+const maxArg = process.argv.find((a) => a.startsWith("--max="));
+const max = Math.max(1, (maxArg && parseInt(maxArg.split("=")[1], 10)) || 1);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-runPipeline({ trigger: "manual", dryRun })
-  .then((res) => {
-    console.log("\n=== RESULT ===");
-    console.log(
-      JSON.stringify(
-        {
-          ok: res.ok,
-          runId: res.runId,
-          durationMs: res.durationMs,
-          error: res.error ?? null,
-          title: res.artifacts.article?.title ?? null,
-          url: res.artifacts.publish?.url ?? null,
-          category: res.artifacts.topic?.category ?? null,
-          words: res.artifacts.article?.wordCount ?? null,
-          seoScore: res.artifacts.seoScore?.score ?? null,
-          readability: res.artifacts.readability ?? null,
-        },
-        null,
-        2
-      )
-    );
-    process.exit(res.ok ? 0 : 1);
-  })
-  .catch((err) => {
-    console.error("Fatal:", err);
-    process.exit(1);
-  });
+const isQuota = (e = "") => /RESOURCE_EXHAUSTED|quota|rate.?limit|\b429\b/i.test(e);
+
+(async () => {
+  let published = 0;
+  for (let i = 1; i <= max; i++) {
+    if (max > 1) console.log(`\n----- Post ${i}/${max} -----`);
+    const res = await runPipeline({ trigger: "manual", dryRun });
+
+    if (res.ok) {
+      published++;
+      console.log(`✓ Published: "${res.artifacts.article?.title}" → ${res.artifacts.publish?.url || "(dry run)"}`);
+    } else if (isQuota(res.error)) {
+      console.log(`Daily free quota reached — stopping after ${published} post(s).`);
+      break;
+    } else {
+      console.log(`Run failed (non-quota): ${res.error}`);
+      break;
+    }
+    if (i < max) await sleep(20000); // space out calls to respect per-minute limits
+  }
+
+  console.log(`\n=== Batch complete: ${published} post(s) published ===`);
+  process.exit(published > 0 || dryRun ? 0 : 1);
+})().catch((err) => {
+  console.error("Fatal:", err);
+  process.exit(1);
+});

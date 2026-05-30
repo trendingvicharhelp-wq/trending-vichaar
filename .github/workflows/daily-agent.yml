@@ -37,7 +37,7 @@ jobs:
         # `npm install`, which resolves the right binaries for the Linux runner.
         run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
-      - name: Run content agent (research → write → publish, with one retry)
+      - name: Publish as many posts as the free quota allows
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -45,10 +45,16 @@ jobs:
           AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           # Reliability first: research from model knowledge (no live grounding),
-          # which avoids the free-tier grounded-JSON failures. Evergreen topics
-          # don't need live search. Remove this to re-enable Google Search.
+          # which avoids free-tier grounded-JSON failures. Evergreen topics don't
+          # need live search. Remove this to re-enable Google Search.
           AGENT_DISABLE_WEB_SEARCH: "1"
-        run: npm run agent || (echo "First attempt failed — retrying in 90s" && sleep 90 && npm run agent)
+        # Each Gemini model has its own ~20 req/day free bucket. Drain both to
+        # maximise daily output; each batch stops cleanly when its quota is hit.
+        run: |
+          echo "===== Batch 1: gemini-2.5-flash ====="
+          AGENT_MODEL_WRITER=gemini-2.5-flash AGENT_MODEL_RESEARCH=gemini-2.5-flash AGENT_MODEL_SEO=gemini-2.5-flash AGENT_MODEL_UTILITY=gemini-2.5-flash npm run agent -- --max=6 || true
+          echo "===== Batch 2: gemini-2.5-flash-lite ====="
+          AGENT_MODEL_WRITER=gemini-2.5-flash-lite AGENT_MODEL_RESEARCH=gemini-2.5-flash-lite AGENT_MODEL_SEO=gemini-2.5-flash-lite AGENT_MODEL_UTILITY=gemini-2.5-flash-lite npm run agent -- --max=6 || true
 
       - name: Keep schedule alive (heartbeat)
         if: always()
