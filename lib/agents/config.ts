@@ -8,20 +8,19 @@
  */
 
 /**
- * Gemini model IDs, split by job. Defaults to gemini-2.5-flash everywhere —
- * it's fast, free-tier friendly, and supports Google Search grounding. For
- * higher writing quality you can set AGENT_MODEL_WRITER=gemini-2.5-pro, but
- * note the free tier has tighter rate limits on the pro model.
+ * Groq (free, OpenAI-compatible Llama) model IDs, split by job. The 70B model
+ * handles writing/research/SEO well; the fast 8B model covers cheap utility
+ * calls to stay light on rate limits.
  */
 export const MODELS = {
   /** The headline article. */
-  writer: process.env.AGENT_MODEL_WRITER || "gemini-2.5-flash",
-  /** Web-research (uses Google Search grounding). */
-  research: process.env.AGENT_MODEL_RESEARCH || "gemini-2.5-flash",
+  writer: process.env.AGENT_MODEL_WRITER || "llama-3.3-70b-versatile",
+  /** Web-research (model knowledge — Groq has no live search). */
+  research: process.env.AGENT_MODEL_RESEARCH || "llama-3.3-70b-versatile",
   /** SEO analysis / optimisation. */
-  seo: process.env.AGENT_MODEL_SEO || "gemini-2.5-flash",
+  seo: process.env.AGENT_MODEL_SEO || "llama-3.3-70b-versatile",
   /** Cheap, high-volume utility calls (topic pick, image prompt, tagging). */
-  utility: process.env.AGENT_MODEL_UTILITY || "gemini-2.5-flash",
+  utility: process.env.AGENT_MODEL_UTILITY || "llama-3.1-8b-instant",
 } as const;
 
 /** The agent's author identity on published posts. */
@@ -103,10 +102,12 @@ Keep everything timeless: a reader should find it just as useful a year from now
 
 /** Retry behaviour for transient API / network failures. */
 export const RETRY = {
-  /** Per-agent-step retries on retryable errors (429 / 5xx / network). */
-  maxAttempts: Number(process.env.AGENT_MAX_ATTEMPTS || 3),
-  baseDelayMs: 1500,
-  maxDelayMs: 20000,
+  /** Per-agent-step retries on retryable errors (429 / 413 / 5xx / network).
+   *  More attempts + longer max delay so we can wait out Groq's per-minute
+   *  token limit (resets within ~60s). */
+  maxAttempts: Number(process.env.AGENT_MAX_ATTEMPTS || 5),
+  baseDelayMs: 2000,
+  maxDelayMs: 40000,
 } as const;
 
 /** Scheduling. Daily at 21:00 in IST. */
@@ -128,12 +129,12 @@ export const DUPLICATE_TITLE_THRESHOLD = 0.6;
 /** Shared secret guarding the /api/agent/run trigger endpoint. */
 export const TRIGGER_SECRET = process.env.AGENT_TRIGGER_SECRET || "";
 
-/** Resolve the Gemini API key, throwing a clear error if missing. */
+/** Resolve the Groq API key, throwing a clear error if missing. */
 export function getApiKey(): string {
-  const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const key = process.env.GROQ_API_KEY;
   if (!key) {
     throw new Error(
-      "GEMINI_API_KEY is not set. Get a free key at https://aistudio.google.com and add it to .env.local before running the content agent."
+      "GROQ_API_KEY is not set. Get a free key at https://console.groq.com and add it to .env.local before running the content agent."
     );
   }
   return key;

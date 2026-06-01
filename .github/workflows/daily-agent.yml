@@ -40,16 +40,12 @@ jobs:
       - name: Publish the day's posts
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-          # Reliability first: research from model knowledge (no live grounding),
-          # which avoids free-tier grounded-JSON failures. Evergreen topics don't
-          # need live search. Remove this to re-enable Google Search.
-          AGENT_DISABLE_WEB_SEARCH: "1"
-        # 2 posts/day — a calm, sustainable cadence that stays well under the free
-        # quota and avoids tripping abuse detection. Stops cleanly if quota is hit.
+        # 2 posts/day — a calm, sustainable cadence with plenty of free-tier
+        # headroom. Stops cleanly if a rate limit is ever hit.
         run: npm run agent -- --max=2
 
       - name: Keep schedule alive (heartbeat)

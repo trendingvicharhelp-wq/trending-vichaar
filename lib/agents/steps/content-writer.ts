@@ -116,7 +116,7 @@ Remember: ${WORD_RANGE.min}–${WORD_RANGE.max} words, Markdown only, no JSON, n
     system: SYSTEM,
     user,
     model: MODELS.writer,
-    maxTokens: 20000,
+    maxTokens: 6000,
     logger: ctx.logger,
     label: "content-writer",
   });
