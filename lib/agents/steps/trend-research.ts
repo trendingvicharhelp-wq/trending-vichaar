@@ -64,7 +64,7 @@ Return 8–12 candidates spanning a few different categories. Return ONLY a JSON
     system: SYSTEM,
     user,
     model: MODELS.research,
-    maxTokens: 6000,
+    maxTokens: 2500,
     logger: ctx.logger,
     label: "trend-research",
   });

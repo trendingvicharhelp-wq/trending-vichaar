@@ -65,7 +65,7 @@ Return ONLY a JSON object (no prose, no code fence) with this exact shape:
     system: SYSTEM,
     user,
     model: MODELS.research,
-    maxTokens: 8000,
+    maxTokens: 3000,
     logger: ctx.logger,
     label: "deep-research",
   });

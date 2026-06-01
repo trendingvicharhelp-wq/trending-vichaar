@@ -46,7 +46,12 @@ export async function withRetry<T>(label: string, fn: () => Promise<T>, logger?:
         logger?.error(`${label} failed (attempt ${attempt}/${RETRY.maxAttempts}): ${msg}`);
         throw err;
       }
-      const delay = Math.min(RETRY.maxDelayMs, RETRY.baseDelayMs * 2 ** (attempt - 1));
+      // Honour Groq's own "try again in X.Xs" hint when present (precise wait
+      // for the per-minute reset); otherwise exponential backoff.
+      const hint = /try again in ([\d.]+)\s*s/i.exec(msg);
+      const delay = hint
+        ? Math.min(RETRY.maxDelayMs, Math.ceil(parseFloat(hint[1]) * 1000) + 1500)
+        : Math.min(RETRY.maxDelayMs, RETRY.baseDelayMs * 2 ** (attempt - 1));
       logger?.warn(`${label} retryable error (attempt ${attempt}): ${msg} — retrying in ${delay}ms`);
       await sleep(delay);
     }
