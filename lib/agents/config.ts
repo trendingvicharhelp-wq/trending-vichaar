@@ -13,12 +13,12 @@
  * calls to stay light on rate limits.
  */
 export const MODELS = {
-  /** The headline article. */
+  /** The headline article — the only step on the big model (best quality). */
   writer: process.env.AGENT_MODEL_WRITER || "llama-3.3-70b-versatile",
-  /** Web-research (model knowledge — Groq has no live search). */
-  research: process.env.AGENT_MODEL_RESEARCH || "llama-3.3-70b-versatile",
-  /** SEO analysis / optimisation. */
-  seo: process.env.AGENT_MODEL_SEO || "llama-3.3-70b-versatile",
+  /** Web-research — small/fast model to conserve the big model's daily budget. */
+  research: process.env.AGENT_MODEL_RESEARCH || "llama-3.1-8b-instant",
+  /** SEO analysis / optimisation — small/fast model. */
+  seo: process.env.AGENT_MODEL_SEO || "llama-3.1-8b-instant",
   /** Cheap, high-volume utility calls (topic pick, image prompt, tagging). */
   utility: process.env.AGENT_MODEL_UTILITY || "llama-3.1-8b-instant",
 } as const;
