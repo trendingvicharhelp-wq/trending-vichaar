@@ -37,7 +37,7 @@ jobs:
         # `npm install`, which resolves the right binaries for the Linux runner.
         run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
-      - name: Publish as many posts as the free quota allows
+      - name: Publish the day's posts
         env:
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -48,13 +48,9 @@ jobs:
           # which avoids free-tier grounded-JSON failures. Evergreen topics don't
           # need live search. Remove this to re-enable Google Search.
           AGENT_DISABLE_WEB_SEARCH: "1"
-        # Each Gemini model has its own ~20 req/day free bucket. Drain both to
-        # maximise daily output; each batch stops cleanly when its quota is hit.
-        run: |
-          echo "===== Batch 1: gemini-2.5-flash ====="
-          AGENT_MODEL_WRITER=gemini-2.5-flash AGENT_MODEL_RESEARCH=gemini-2.5-flash AGENT_MODEL_SEO=gemini-2.5-flash AGENT_MODEL_UTILITY=gemini-2.5-flash npm run agent -- --max=6 || true
-          echo "===== Batch 2: gemini-2.5-flash-lite ====="
-          AGENT_MODEL_WRITER=gemini-2.5-flash-lite AGENT_MODEL_RESEARCH=gemini-2.5-flash-lite AGENT_MODEL_SEO=gemini-2.5-flash-lite AGENT_MODEL_UTILITY=gemini-2.5-flash-lite npm run agent -- --max=6 || true
+        # 2 posts/day — a calm, sustainable cadence that stays well under the free
+        # quota and avoids tripping abuse detection. Stops cleanly if quota is hit.
+        run: npm run agent -- --max=2
 
       - name: Keep schedule alive (heartbeat)
         if: always()
