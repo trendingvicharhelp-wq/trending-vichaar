@@ -1,24 +1,17 @@
 /* eslint-disable no-console */
-/** One-off: give existing posts a real AI cover image (Pollinations, free). */
+/** One-off: give every existing post a working, topic-relevant cover image. */
 import "@/lib/agents/load-env";
 import { connectDB } from "@/lib/db";
 import { Post } from "@/models/Post";
-
-function aiCover(text: string): string {
-  const t = text.replace(/\s+/g, " ").trim().slice(0, 480);
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    t
-  )}?width=1600&height=900&nologo=true&model=flux`;
-}
+import { coverImageFor } from "@/lib/agents/config";
 
 (async () => {
   await connectDB();
-  const posts = await Post.find({}, "title slug coverImage").lean();
+  const posts = await Post.find({}, "title slug category").lean();
   for (const p of posts) {
-    const prompt = `${p.title}. Modern editorial digital illustration, vibrant gradient, clean premium blog hero image, no text, no words`;
-    const cover = aiCover(prompt);
+    const cover = coverImageFor(p.category, p.slug);
     await Post.updateOne({ _id: p._id }, { $set: { coverImage: cover, "seo.ogImage": cover } });
-    console.log(`updated cover: ${p.slug}`);
+    console.log(`updated cover: ${p.slug} [${p.category}]`);
   }
   console.log(`Done — ${posts.length} posts updated.`);
   process.exit(0);

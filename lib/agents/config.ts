@@ -144,3 +144,41 @@ export function getApiKey(): string {
 export const CATEGORY_NAME_BY_SLUG: Record<string, string> = Object.fromEntries(
   ALLOWED_CATEGORIES.map((c) => [c.slug, c.name])
 );
+
+/** Photo-search keywords per category for free cover images (LoremFlickr). */
+const CATEGORY_IMAGE_KEYWORDS: Record<string, string> = {
+  "artificial-intelligence": "technology,ai,abstract",
+  "ai-tools": "technology,computer,software",
+  technology: "technology,gadgets",
+  "software-apps": "software,laptop,screen",
+  "future-tech": "futuristic,technology",
+  productivity: "workspace,desk,office",
+  "graphic-design": "design,creative,colorful",
+  "social-media": "smartphone,social,phone",
+  "creator-economy": "camera,creator,studio",
+  "digital-lifestyle": "laptop,lifestyle,modern",
+  "internet-culture": "internet,computer,neon",
+  "consumer-products": "gadgets,product,shopping",
+  cars: "car,automobile,road",
+  crypto: "cryptocurrency,bitcoin,technology",
+  travel: "travel,landscape,destination",
+  fashion: "fashion,style,clothing",
+  skincare: "skincare,beauty,cosmetics",
+  creativity: "creative,art,colorful",
+  "viral-trends": "trending,social,vibrant",
+  lifestyle: "lifestyle,minimal",
+  "music-culture": "music,concert,stage",
+};
+
+/**
+ * Build a free, no-key, topic-relevant cover image URL (LoremFlickr serves
+ * Creative-Commons photos by keyword). The slug-derived `lock` keeps the image
+ * stable per post (so it doesn't change on every page load).
+ */
+export function coverImageFor(category: string, slug: string): string {
+  const kw = CATEGORY_IMAGE_KEYWORDS[category] || "technology,abstract";
+  let h = 0;
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) | 0;
+  const lock = (Math.abs(h) % 100000) + 1;
+  return `https://loremflickr.com/1600/900/${encodeURIComponent(kw)}?lock=${lock}`;
+}

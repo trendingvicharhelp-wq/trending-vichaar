@@ -1,0 +1,23 @@
+name: Fix Post Covers (one-off)
+
+# Manually-run maintenance job: refresh every post's cover image to a working,
+# topic-relevant LoremFlickr URL. Run it once from the Actions tab after a cover
+# provider change. Safe to run anytime.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix-covers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: Backfill covers
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: npx tsx scripts/fix-covers.ts

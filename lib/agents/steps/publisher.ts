@@ -14,7 +14,7 @@ import slugify from "slugify";
 import { connectDB } from "@/lib/db";
 import { Post } from "@/models/Post";
 import { calcReadingTime, makeExcerpt, siteUrl } from "@/lib/utils";
-import { AGENT_AUTHOR, ALLOWED_CATEGORY_SLUGS } from "@/lib/agents/config";
+import { AGENT_AUTHOR, ALLOWED_CATEGORY_SLUGS, coverImageFor } from "@/lib/agents/config";
 import type {
   AgentContext,
   GeneratedArticle,
@@ -23,19 +23,6 @@ import type {
   SeoPackage,
 } from "@/lib/agents/types";
 
-/**
- * Build a free, no-API-key AI cover image from the featured-image prompt via
- * Pollinations. The image is generated on first request and cached thereafter.
- */
-function aiCover(prompt: string, fallbackTitle: string): string {
-  const text = (prompt || fallbackTitle)
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 480);
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    text
-  )}?width=1600&height=900&nologo=true&model=flux`;
-}
 
 /** Find a slug not already taken in the posts collection. */
 async function uniqueSlug(base: string): Promise<string> {
@@ -72,7 +59,7 @@ export async function publish(
 
   await connectDB();
   const slug = await uniqueSlug(seo.slug || article.title);
-  const cover = aiCover(image.featuredImagePrompt, article.title);
+  const cover = coverImageFor(category, slug);
 
   const doc = await Post.create({
     title: article.title,
