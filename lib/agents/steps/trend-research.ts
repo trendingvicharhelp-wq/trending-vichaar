@@ -13,7 +13,7 @@
  */
 
 import { callWithWebSearch, extractJson } from "@/lib/agents/claude";
-import { MODELS, ALLOWED_CATEGORIES } from "@/lib/agents/config";
+import { MODELS, ALLOWED_CATEGORIES, CATEGORY_NAME_BY_SLUG } from "@/lib/agents/config";
 import { systemFor } from "@/lib/agents/prompts";
 import type {
   AgentContext,
@@ -36,17 +36,27 @@ Brand safety — non-negotiable: pick only positive, helpful, evergreen ideas. N
 
 Favour topics with durable, repeatable search demand (how-tos, comparisons, explainers, tool round-ups, frameworks) over flash-in-the-pan moments.`);
 
-export async function trendResearch(ctx: AgentContext): Promise<TrendResearchResult> {
-  ctx.logger.forStep("trend-research").info("Researching current evergreen trends for the 20–35 audience");
+export async function trendResearch(
+  ctx: AgentContext,
+  targetCategory?: string
+): Promise<TrendResearchResult> {
+  const catName = targetCategory ? CATEGORY_NAME_BY_SLUG[targetCategory] || targetCategory : "";
+  ctx.logger
+    .forStep("trend-research")
+    .info(`Researching evergreen trends${catName ? ` in "${catName}"` : ""} for the 20–35 audience`);
 
-  const user = `Research the web NOW and identify the strongest evergreen topic candidates the audience is actively searching for and discussing across the allowed categories.
+  const focus = targetCategory
+    ? `FOCUS: Every candidate MUST fit the "${catName}" category — set each "suggestedCategory" to "${targetCategory}". Find varied, distinct topic ideas within this one category.\n\n`
+    : "";
+
+  const user = `${focus}Identify the strongest evergreen topic candidates the 20–35 audience is actively searching for and discussing${catName ? ` in the "${catName}" category` : " across the allowed categories"}.
 
 For each candidate, judge:
 - searchDemand (0–100): how much 20–35 year-olds are currently searching / discussing it.
 - evergreenScore (0–100): how long it will stay useful (higher = more durable).
 - sources: the publications / sites where you saw the signal.
 
-Return 8–12 candidates spanning a few different categories. Return ONLY a JSON object (no prose, no markdown, no code fence) with this exact shape:
+Return 6–10 strong, distinct candidates. Return ONLY a JSON object (no prose, no markdown, no code fence) with this exact shape:
 {
   "candidates": [
     {

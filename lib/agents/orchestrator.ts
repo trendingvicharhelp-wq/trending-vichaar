@@ -15,7 +15,12 @@ import { connectDB } from "@/lib/db";
 import { AgentRun } from "@/models/AgentRun";
 import { TopicHistory } from "@/models/TopicHistory";
 import { Logger } from "@/lib/agents/logger";
-import { DUPLICATE_TITLE_THRESHOLD, TOPIC_HISTORY_WINDOW } from "@/lib/agents/config";
+import {
+  ALLOWED_CATEGORY_SLUGS,
+  CATEGORY_NAME_BY_SLUG,
+  DUPLICATE_TITLE_THRESHOLD,
+  TOPIC_HISTORY_WINDOW,
+} from "@/lib/agents/config";
 import { isDuplicate, jaccard, tokenizeTitle } from "@/lib/agents/dedup";
 import { readability, seoScore } from "@/lib/agents/scoring";
 import type { AgentContext, PipelineArtifacts, PipelineResult, TopicSelection } from "@/lib/agents/types";
@@ -39,35 +44,57 @@ export interface RunOptions {
 interface RecentTopic {
   title: string;
   tokens: string[];
+  category: string;
 }
 
 async function loadRecentTopics(): Promise<RecentTopic[]> {
   try {
     await connectDB();
-    const rows = await TopicHistory.find({}, "title titleTokens")
+    const rows = await TopicHistory.find({}, "title titleTokens category")
       .sort({ createdAt: -1 })
       .limit(TOPIC_HISTORY_WINDOW)
       .lean();
     return rows.map((r) => ({
       title: r.title,
       tokens: r.titleTokens?.length ? r.titleTokens : tokenizeTitle(r.title),
+      category: r.category || "",
     }));
   } catch {
     return [];
   }
 }
 
+/**
+ * Rotate categories for variety: pick the allowed category that has gone the
+ * longest without a post (never-used categories first). `recentNewestFirst` is
+ * the category of each recent post, newest first.
+ */
+function pickTargetCategory(recentNewestFirst: string[]): string {
+  let best = ALLOWED_CATEGORY_SLUGS[0];
+  let bestScore = -1;
+  for (const slug of ALLOWED_CATEGORY_SLUGS) {
+    const idx = recentNewestFirst.indexOf(slug);
+    const score = idx === -1 ? Number.POSITIVE_INFINITY : idx; // unused = highest priority
+    if (score > bestScore) {
+      bestScore = score;
+      best = slug;
+    }
+  }
+  return best;
+}
+
 /** Select a topic that isn't a near-duplicate of anything published recently. */
 async function selectUniqueTopic(
   trends: PipelineArtifacts["trends"],
   recent: RecentTopic[],
-  ctx: AgentContext
+  ctx: AgentContext,
+  targetCategory: string
 ): Promise<TopicSelection> {
   const avoid = recent.map((r) => r.title);
   const history = recent.map((r) => r.tokens);
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const topic = await selectTopic(trends!, avoid, ctx);
+    const topic = await selectTopic(trends!, avoid, ctx, targetCategory);
     const tokens = tokenizeTitle(topic.workingTitle);
     if (!isDuplicate(tokens, history, DUPLICATE_TITLE_THRESHOLD)) return topic;
 
@@ -83,7 +110,7 @@ async function selectUniqueTopic(
   }
   // Give up gracefully — take the last selection rather than failing the run.
   ctx.logger.warn("Could not find a fully unique topic after 3 tries; proceeding with best effort.");
-  return selectTopic(trends!, avoid, ctx);
+  return selectTopic(trends!, avoid, ctx, targetCategory);
 }
 
 export async function runPipeline(options: RunOptions = {}): Promise<PipelineResult> {
@@ -114,13 +141,17 @@ export async function runPipeline(options: RunOptions = {}): Promise<PipelineRes
   }
 
   try {
-    // 1. Trend research
-    artifacts.trends = await trendResearch(ctx);
+    // 0. Pick a target category for variety (rotate through all categories).
+    const recent = await loadRecentTopics();
+    const targetCategory = pickTargetCategory(recent.map((r) => r.category).filter(Boolean));
+    logger.info(`Target category (rotation): ${CATEGORY_NAME_BY_SLUG[targetCategory] || targetCategory}`);
+
+    // 1. Trend research, focused on the target category
+    artifacts.trends = await trendResearch(ctx, targetCategory);
     logger.info(`Found ${artifacts.trends.candidates.length} trend candidates.`);
 
-    // 2. Topic selection (with repetition prevention)
-    const recent = await loadRecentTopics();
-    artifacts.topic = await selectUniqueTopic(artifacts.trends, recent, ctx);
+    // 2. Topic selection (forced to the target category + repetition prevention)
+    artifacts.topic = await selectUniqueTopic(artifacts.trends, recent, ctx, targetCategory);
     logger.info(`Selected topic: "${artifacts.topic.workingTitle}" [${artifacts.topic.category}]`);
 
     // 3. SEO analysis

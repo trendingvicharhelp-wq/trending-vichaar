@@ -60,7 +60,8 @@ const SCHEMA: Record<string, unknown> = {
 export async function selectTopic(
   trends: TrendResearchResult,
   recentTitles: string[],
-  ctx: AgentContext
+  ctx: AgentContext,
+  targetCategory?: string
 ): Promise<TopicSelection> {
   ctx.logger
     .forStep("topic-selection")
@@ -71,7 +72,12 @@ export async function selectTopic(
     ? recentTitles.map((t) => `- ${t}`).join("\n")
     : "(none yet)";
 
-  const user = `Pick the single best topic to write today.
+  const catName = targetCategory ? CATEGORY_NAME_BY_SLUG[targetCategory] || targetCategory : "";
+  const requireCat = targetCategory
+    ? ` The topic MUST be in the "${catName}" category — set "category" to exactly "${targetCategory}". Choose the most compelling, distinct angle within this category.`
+    : "";
+
+  const user = `Pick the single best topic to write today.${requireCat}
 
 CANDIDATE TOPICS (JSON):
 ${candidatesJson}
