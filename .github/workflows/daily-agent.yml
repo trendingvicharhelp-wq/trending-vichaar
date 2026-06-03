@@ -20,7 +20,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,9 +44,9 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-        # 2 posts/day — a calm, sustainable cadence with plenty of free-tier
-        # headroom. Stops cleanly if a rate limit is ever hit.
-        run: npm run agent -- --max=2
+        # 4 posts/day — still well within Groq's free daily budget. Stops
+        # cleanly if a rate limit is ever hit (publishes as many as it can).
+        run: npm run agent -- --max=4
 
       - name: Keep schedule alive (heartbeat)
         if: always()
