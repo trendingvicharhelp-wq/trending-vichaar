@@ -51,7 +51,7 @@ export default function ContactPage() {
                 icon={Instagram}
                 title="Instagram"
                 value="@trending.vichaar"
-                href="https://instagram.com"
+                href="https://www.instagram.com/trending.vichaar"
               />
             </div>
 

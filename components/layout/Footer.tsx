@@ -5,7 +5,7 @@ import { CATEGORY_LIST } from "@/lib/utils";
 
 const SOCIALS = [
   { href: "https://twitter.com", label: "Twitter", icon: Twitter },
-  { href: "https://instagram.com", label: "Instagram", icon: Instagram },
+  { href: "https://www.instagram.com/trending.vichaar", label: "Instagram", icon: Instagram },
   { href: "https://youtube.com", label: "YouTube", icon: Youtube },
   { href: "https://github.com", label: "GitHub", icon: Github },
   { href: "https://linkedin.com", label: "LinkedIn", icon: Linkedin },
