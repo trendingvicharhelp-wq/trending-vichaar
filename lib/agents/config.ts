@@ -15,8 +15,8 @@
 export const MODELS = {
   /** The headline article — the only step on the big model (best quality). */
   writer: process.env.AGENT_MODEL_WRITER || "llama-3.3-70b-versatile",
-  /** Web-research — small/fast model to conserve the big model's daily budget. */
-  research: process.env.AGENT_MODEL_RESEARCH || "llama-3.1-8b-instant",
+  /** Research — on the big model for deeper, richer briefs (quality matters). */
+  research: process.env.AGENT_MODEL_RESEARCH || "llama-3.3-70b-versatile",
   /** SEO analysis / optimisation — small/fast model. */
   seo: process.env.AGENT_MODEL_SEO || "llama-3.1-8b-instant",
   /** Cheap, high-volume utility calls (topic pick, image prompt, tagging). */
