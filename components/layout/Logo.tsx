@@ -16,18 +16,25 @@ export function Logo({ className, showWord = true, href = "/" }: LogoProps) {
     >
       <span className="relative inline-flex h-8 w-8 items-center justify-center">
         <svg
-          viewBox="0 0 40 40"
+          viewBox="0 0 100 100"
           aria-hidden="true"
-          className="h-8 w-8 text-foreground transition-transform duration-500 group-hover:rotate-[8deg]"
+          className="h-8 w-8 transition-transform duration-500 group-hover:rotate-[8deg]"
         >
-          <rect x="2" y="2" width="36" height="36" rx="10" className="fill-foreground" />
+          <circle cx="50" cy="50" r="50" fill="#111111" />
+          {/* T */}
+          <rect x="20" y="30" width="38" height="12.5" rx="6.25" fill="#ffffff" />
+          <rect x="32.75" y="30" width="12.5" height="46" rx="6.25" fill="#ffffff" />
+          {/* V */}
           <path
-            d="M11 14h18M14 14v14M26 14v14"
-            stroke="rgb(var(--background))"
-            strokeWidth="2.5"
+            d="M51 40 L62 73 L73 40"
+            fill="none"
+            stroke="#FF5E1A"
+            strokeWidth="12"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
-          <circle cx="30" cy="11" r="3" className="fill-accent" />
+          {/* dot */}
+          <circle cx="78" cy="33" r="7.5" fill="#FF5E1A" />
         </svg>
       </span>
       {showWord && (
