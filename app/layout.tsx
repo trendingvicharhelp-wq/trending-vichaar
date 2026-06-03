@@ -60,25 +60,22 @@ export const metadata: Metadata = {
     url: siteUrl(),
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
+        url: "/logo.png",
+        width: 1254,
+        height: 1254,
         alt: "Trending Vichaar",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Trending Vichaar — Daily Trends, Creative Ideas & Digital Culture",
     description: "A modern creative magazine for designers, creators and the perpetually curious.",
-    images: ["/og-image.png"],
+    images: ["/logo.png"],
   },
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
-    apple: "/apple-touch-icon.png",
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: "/logo.png",
   },
   manifest: "/site.webmanifest",
   alternates: {
