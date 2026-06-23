@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="container max-w-3xl py-20 lg:py-28">
       <p className="text-xs uppercase tracking-[0.3em] text-muted">Legal</p>
       <h1 className="mt-4 font-serif text-display-xl">Privacy Policy</h1>
-      <p className="mt-4 text-sm text-muted">Last updated: May 2026</p>
+      <p className="mt-4 text-sm text-muted">Last updated: June 2026</p>
 
       <div className="prose-vichaar mt-12">
         <h2>What we collect</h2>
@@ -24,14 +24,54 @@ export default function PrivacyPage() {
         <h2>How we use it</h2>
         <p>
           We use your email solely to deliver the newsletter or reply to your
-          comment. We never sell or rent your data. We do not use third-party
-          ad networks that profile you across sites.
+          comment. We never sell or rent your data.
         </p>
 
         <h2>Cookies</h2>
         <p>
-          We use a small number of first-party cookies for authentication
-          (admin) and theme preference (dark/light mode). No tracking cookies.
+          We use first-party cookies for authentication (admin) and theme
+          preference (dark/light mode). In addition, third-party vendors —
+          including Google — use cookies to serve ads on this site (see
+          Advertising below).
+        </p>
+
+        <h2>Advertising</h2>
+        <p>
+          Trending Vichaar displays ads served by Google AdSense. Third-party
+          vendors, including Google, use cookies to serve ads based on your
+          prior visits to this and other websites.
+        </p>
+        <p>
+          Google&apos;s use of advertising cookies enables it and its partners
+          to serve ads to you based on your visits to this site and/or other
+          sites on the Internet. You may opt out of personalised advertising by
+          visiting{" "}
+          <a
+            href="https://www.google.com/settings/ads"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google Ads Settings
+          </a>
+          . You can also opt out of a third-party vendor&apos;s use of cookies
+          for personalised advertising by visiting{" "}
+          <a
+            href="https://www.aboutads.info/choices/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            aboutads.info
+          </a>
+          . For more information on how Google uses data when you use our
+          partners&apos; sites or apps, see{" "}
+          <a
+            href="https://policies.google.com/technologies/partner-sites"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Google&apos;s Privacy &amp; Terms
+          </a>
+          .
         </p>
 
         <h2>Your rights</h2>
