@@ -46,7 +46,40 @@
       "Bash(git remote *)",
       "Bash(git ls-remote *)",
       "Bash(node -e \"const c=require\\('crypto'\\);console.log\\('JWT_SECRET=        '+c.randomBytes\\(32\\).toString\\('base64'\\)\\);console.log\\('AGENT_TRIGGER_SECRET='+c.randomBytes\\(24\\).toString\\('hex'\\)\\);\")",
-      "Bash(rm -f vercel.json)"
+      "Bash(rm -f vercel.json)",
+      "Bash(git ls-tree *)",
+      "Bash(gh auth *)",
+      "Bash(gh run *)",
+      "PowerShell($ErrorActionPreference='SilentlyContinue'; \\(Get-Command gh\\).Source; gh run list --limit 5; gh run view --log-failed 2>&1 | Select-Object -First 40)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git -c core.autocrlf=true pull --rebase origin main)",
+      "Bash(git stash *)",
+      "Bash(git fetch *)",
+      "WebFetch(domain:trending-vichaar.vercel.app)",
+      "Bash(npx tsx *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} | type=%{content_type} | %{size_download} bytes | %{time_total}s\\\\n\" --max-time 60 \"https://image.pollinations.ai/prompt/modern%20editorial%20illustration%20about%20AI%20tools,%20vibrant%20gradient,%20no%20text?width=1600&height=900&nologo=true&model=flux\")",
+      "Bash(cd \"e:/Client Website Projects/My Blog Site\" && npx tsx scripts/test-key.ts 2>&1 | grep -viE \"AIza|AQ\\\\.\" | tail -5; rm -f scripts/test-key.ts; echo \"\\(temp script removed\\)\")",
+      "Bash(timeout 60 git -c core.autocrlf=true push origin main)",
+      "Bash(curl -sL -o /dev/null -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes | %{time_total}s\\\\n\" --max-time 40 \"https://loremflickr.com/1600/900/travel\")",
+      "Bash(curl -sL -o /dev/null -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes | %{time_total}s\\\\n\" --max-time 40 \"https://loremflickr.com/1600/900/skincare,beauty\")",
+      "Bash(curl -sL -o /dev/null -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes | %{time_total}s\\\\n\" --max-time 40 \"https://picsum.photos/seed/abc123/1600/900\")",
+      "Bash(file public/logo.png)",
+      "Bash(python -c \"from PIL import Image; im=Image.open\\('public/logo.png'\\); print\\('size',im.size,'mode',im.mode\\)\")",
+      "Bash(mv \"public/logo.png.png\" \"public/logo.png\")",
+      "Bash(python -c \"from PIL import Image; im=Image.open\\('public/logo.png'\\); print\\('size',im.size,'mode',im.mode,'has_alpha', im.mode in \\('RGBA','LA'\\) or \\(im.mode=='P' and 'transparency' in im.info\\)\\)\")",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(curl -s https://trending-vichaar.vercel.app/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://trending-vichaar.vercel.app/privacy)",
+      "Bash(curl -s -D - https://trending-vichaar.vercel.app/ads.txt -o /tmp/adstxt_body.txt)",
+      "Bash(curl -s https://trending-vichaar.vercel.app/sitemap.xml)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://trending-vichaar.vercel.app/about)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://trending-vichaar.vercel.app/contact)"
+    ],
+    "additionalDirectories": [
+      "e:\\Client Website Projects\\My Blog Site\\scripts"
     ]
   }
 }
