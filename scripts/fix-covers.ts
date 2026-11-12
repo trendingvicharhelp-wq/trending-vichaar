@@ -7,7 +7,8 @@ import { coverImageFor } from "@/lib/agents/config";
 
 (async () => {
   await connectDB();
-  const posts = await Post.find({}, "title slug category").lean();
+  // Only replace covers on the dead LoremFlickr host — never touch custom covers.
+  const posts = await Post.find({ coverImage: /loremflickr.com/ }, "title slug category").lean();
   for (const p of posts) {
     const cover = coverImageFor(p.category, p.slug);
     await Post.updateOne({ _id: p._id }, { $set: { coverImage: cover, "seo.ogImage": cover } });

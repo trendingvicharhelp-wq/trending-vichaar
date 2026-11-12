@@ -145,40 +145,46 @@ export const CATEGORY_NAME_BY_SLUG: Record<string, string> = Object.fromEntries(
   ALLOWED_CATEGORIES.map((c) => [c.slug, c.name])
 );
 
-/** Photo-search keywords per category for free cover images (LoremFlickr). */
-const CATEGORY_IMAGE_KEYWORDS: Record<string, string> = {
-  "artificial-intelligence": "technology,ai,abstract",
-  "ai-tools": "technology,computer,software",
-  technology: "technology,gadgets",
-  "software-apps": "software,laptop,screen",
-  "future-tech": "futuristic,technology",
-  productivity: "workspace,desk,office",
-  "graphic-design": "design,creative,colorful",
-  "social-media": "smartphone,social,phone",
-  "creator-economy": "camera,creator,studio",
-  "digital-lifestyle": "laptop,lifestyle,modern",
-  "internet-culture": "internet,computer,neon",
-  "consumer-products": "gadgets,product,shopping",
-  cars: "car,automobile,road",
-  crypto: "cryptocurrency,bitcoin,technology",
-  travel: "travel,landscape,destination",
-  fashion: "fashion,style,clothing",
-  skincare: "skincare,beauty,cosmetics",
-  creativity: "creative,art,colorful",
-  "viral-trends": "trending,social,vibrant",
-  lifestyle: "lifestyle,minimal",
-  "music-culture": "music,concert,stage",
+/**
+ * Hand-picked Unsplash photo IDs per category for cover images. Served from
+ * Unsplash's static CDN (images.unsplash.com) — no API key, very reliable.
+ * (LoremFlickr was used before but started returning HTTP 500 for every image
+ * in Nov 2026.) Add more IDs to a pool to get more variety in that category.
+ */
+const TECH = ["1518770660439-4636190af475", "1531297484001-80022131f5a1", "1550751827-4bd374c3f58b", "1488590528505-98d2b5aba04b"];
+const CATEGORY_COVER_POOLS: Record<string, string[]> = {
+  "artificial-intelligence": ["1677442136019-21780ecad995", "1620712943543-bcc4688e7485", "1485827404703-89b55fcc595e"],
+  "ai-tools": ["1677442136019-21780ecad995", "1620712943543-bcc4688e7485", "1488590528505-98d2b5aba04b", "1531297484001-80022131f5a1"],
+  technology: TECH,
+  "software-apps": ["1461749280684-dccba630e2f6", "1498050108023-c5249f4df085", "1517694712202-14dd9538aa97", "1512941937669-90a1b58e7e9c"],
+  "future-tech": ["1451187580459-43490279c0fa", "1535223289827-42f1e9919769", "1485827404703-89b55fcc595e"],
+  productivity: ["1454165804606-c3d57bc86b40", "1484480974693-6ca0a78fb36b", "1497032628192-86f99bcd76bc", "1499750310107-5fef28a66643"],
+  "graphic-design": ["1558655146-9f40138edfeb", "1561070791-2526d30994b5", "1626785774573-4b799315345d", "1513364776144-60967b0f800f"],
+  "social-media": ["1611162616305-c69b3fa7fbe0", "1611605698335-8b1569810432", "1512941937669-90a1b58e7e9c"],
+  "creator-economy": ["1492691527719-9d1e07e534b4", "1516035069371-29a1b244cc32", "1478737270239-2f02b77fc618"],
+  "digital-lifestyle": ["1493612276216-ee3925520721", "1522202176988-66273c2fd55f", "1499750310107-5fef28a66643", "1517048676732-d65bc937f952"],
+  "internet-culture": ["1563986768609-322da13575f3", "1550745165-9bc0b252726f", "1607746882042-944635dfe10e"],
+  "consumer-products": ["1505740420928-5e560c06d30e", "1523275335684-37898b6baf30", "1542291026-7eec264c27ff"],
+  cars: ["1593941707882-a5bba14938c7", "1503376780353-7e6692767b70", "1494976388531-d1058494cdd8", "1492144534655-ae79c964c9d7", "1560958089-b8a1929cea89"],
+  crypto: ["1518546305927-5a555bb7020d", "1639762681485-074b7f938ba0"],
+  travel: ["1488646953014-85cb44e25828", "1469854523086-cc02fe5d8800", "1476514525535-07fb3b4ae5f1", "1507525428034-b723cf961d3e"],
+  fashion: ["1445205170230-053b83016050", "1490481651871-ab68de25d43d", "1483985988355-763728e1935b"],
+  skincare: ["1570172619644-dfd03ed5d881", "1598440947619-2c35fc9aa908"],
+  // Legacy categories that may exist on older posts.
+  creativity: ["1513364776144-60967b0f800f", "1460661419201-fd4cecdf8a8b"],
+  "viral-trends": ["1563986768609-322da13575f3", "1607746882042-944635dfe10e", "1611162616305-c69b3fa7fbe0"],
+  lifestyle: ["1493612276216-ee3925520721", "1522202176988-66273c2fd55f"],
+  "music-culture": ["1470225620780-dba8ba36b745", "1493225457124-a3eb161ffa5f", "1511379938547-c1f69419868d"],
 };
 
 /**
- * Build a free, no-key, topic-relevant cover image URL (LoremFlickr serves
- * Creative-Commons photos by keyword). The slug-derived `lock` keeps the image
- * stable per post (so it doesn't change on every page load).
+ * Pick a topic-relevant cover image for a post. The slug hash keeps the
+ * choice stable per post (it doesn't change on every page load).
  */
 export function coverImageFor(category: string, slug: string): string {
-  const kw = CATEGORY_IMAGE_KEYWORDS[category] || "technology,abstract";
+  const pool = CATEGORY_COVER_POOLS[category] || TECH;
   let h = 0;
   for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) | 0;
-  const lock = (Math.abs(h) % 100000) + 1;
-  return `https://loremflickr.com/1600/900/${encodeURIComponent(kw)}?lock=${lock}`;
+  const id = pool[Math.abs(h) % pool.length];
+  return `https://images.unsplash.com/photo-${id}?w=1600&h=900&fit=crop&q=80&auto=format`;
 }
