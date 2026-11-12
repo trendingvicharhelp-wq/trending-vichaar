@@ -26,6 +26,9 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 function isRetryable(err: unknown): boolean {
   const status = Number((err as { status?: number })?.status ?? 0);
   if (status === 429 || status === 413 || status >= 500) return true;
+  // A single malformed/refused JSON generation (Groq 400 json_validate_failed)
+  // usually succeeds on a fresh attempt.
+  if (status === 400 && /json_validate_failed/.test(err instanceof Error ? err.message : "")) return true;
   const msg = err instanceof Error ? err.message : String(err);
   return /(429|413|rate.?limit|tokens per minute|TPM|request too large|over.?loaded|timeout|ECONN|ETIMEDOUT|fetch failed|5\d\d)/i.test(
     msg
@@ -77,9 +80,14 @@ async function chat(opts: {
       { role: "user", content: opts.user },
     ],
     max_tokens: opts.maxTokens,
-    temperature: 0.8,
+    // JSON calls run cooler: at high temperature gpt-oss occasionally emits
+    // over-escaped separators (\",\") that merge array items into one string.
+    temperature: opts.jsonMode ? 0.5 : 0.8,
   };
   if (opts.jsonMode) body.response_format = { type: "json_object" };
+  // gpt-oss models are reasoning models: their hidden reasoning tokens count
+  // against max_tokens. Keep effort low so the budgets above go to the output.
+  if (/gpt-oss/i.test(opts.model)) body.reasoning_effort = "low";
 
   const res = await fetch(GROQ_URL, {
     method: "POST",

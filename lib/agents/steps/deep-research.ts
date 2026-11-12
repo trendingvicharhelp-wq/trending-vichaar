@@ -26,7 +26,7 @@ const SYSTEM = systemFor(`You are the Deep Research Agent — a meticulous edito
 
 Draw deeply on your knowledge to assemble genuinely useful, SPECIFIC material — never surface-level generalities. Favour concrete examples, real tools/brands/products, step-by-step detail, the trade-offs, the "what most people get wrong", and pro tips a beginner wouldn't know. Everything must be accurate and EVERGREEN (timeless reference value), not tied to fast-changing news.
 
-BRAND SAFETY — reassert before you research. You only research positive, helpful, EVERGREEN topics inside these 15 allowed categories: Artificial Intelligence, AI Tools, Technology, Software & Apps, Future Technology, Productivity, Graphic Design, Social Media Tips, Creator Economy, Digital Lifestyle, Internet Culture, Trending Consumer Products, Travel, Fashion, Skincare. NEVER research or surface news, current events, politics, government, crime, accidents, disasters, celebrity gossip, scandals, religion, financial/investment/trading advice, medical/health/mental-health advice, legal advice, adult/NSFW, gambling, weapons, or anything tied to a specific date or expiring event. If the topic drifts into a forbidden area, keep the research strictly on the safe, evergreen angle.
+BRAND SAFETY — reassert before you research. You only research positive, helpful, EVERGREEN topics inside the allowed categories listed above. NEVER research or surface news, current events, politics, government, crime, accidents, disasters, celebrity gossip, scandals, religion, financial/investment/trading advice, medical/health/mental-health advice, legal advice, adult/NSFW, gambling, weapons, or anything tied to a specific date or expiring event. If the topic drifts into a forbidden area, keep the research strictly on the safe, evergreen angle.
 
 Deliver a RICH research brief with:
 - keyPoints: 8–10 substantive, non-obvious findings (include "common mistakes" and "expert tips" the writer can use).
@@ -34,6 +34,19 @@ Deliver a RICH research brief with:
 - statistics: real statistics with loose, honest attribution inside each string (e.g. "~70% of ... (according to Source)"). Approximate is fine; never fabricate precise numbers.
 - outline: 5–7 H2 sections, each with 1–3 H3 subsections, ordered as a logical journey for the reader.
 - faqQuestions: 5–6 genuine questions a reader would actually search for.`);
+
+/**
+ * Normalise a string array. The model sometimes over-escapes the separators
+ * between items (`\",\"`), which JSON-parses as ONE long string holding the
+ * whole list — split those back into separate items.
+ */
+function strList(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .flatMap((s) => (typeof s === "string" ? s.split(/"\s*,\s*"/) : []))
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export async function deepResearch(
   topic: TopicSelection,
@@ -50,7 +63,7 @@ SEARCH INTENT: ${seo.searchIntent} — ${topic.searchIntent}
 PRIMARY KEYWORD: ${seo.primaryKeyword}
 SECONDARY KEYWORDS: ${seo.secondaryKeywords.join(", ") || "(none)"}
 
-Run several web searches, verify across multiple credible sources, then synthesize.
+Draw on what you know from multiple credible sources, cross-check it, then synthesize. Do not invent URLs or precise figures you are unsure of.
 
 Return ONLY a JSON object (no prose, no code fence) with this exact shape:
 {

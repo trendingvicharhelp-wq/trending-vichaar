@@ -14,13 +14,13 @@
  */
 export const MODELS = {
   /** The headline article — the only step on the big model (best quality). */
-  writer: process.env.AGENT_MODEL_WRITER || "llama-3.3-70b-versatile",
+  writer: process.env.AGENT_MODEL_WRITER || "openai/gpt-oss-120b",
   /** Research — on the big model for deeper, richer briefs (quality matters). */
-  research: process.env.AGENT_MODEL_RESEARCH || "llama-3.3-70b-versatile",
+  research: process.env.AGENT_MODEL_RESEARCH || "openai/gpt-oss-120b",
   /** SEO analysis / optimisation — small/fast model. */
-  seo: process.env.AGENT_MODEL_SEO || "llama-3.1-8b-instant",
+  seo: process.env.AGENT_MODEL_SEO || "openai/gpt-oss-20b",
   /** Cheap, high-volume utility calls (topic pick, image prompt, tagging). */
-  utility: process.env.AGENT_MODEL_UTILITY || "llama-3.1-8b-instant",
+  utility: process.env.AGENT_MODEL_UTILITY || "openai/gpt-oss-20b",
 } as const;
 
 /** The agent's author identity on published posts. */
