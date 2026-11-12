@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { connectDB } from "@/lib/db";
 import { Post, type IPost } from "@/models/Post";
 import { getSamplePosts } from "@/lib/sample-data";
@@ -128,6 +129,25 @@ export async function countPosts(filter: { category?: string; search?: string } 
     return Post.countDocuments(query);
   }, fallback());
 }
+
+/*
+ * Cached variants for PUBLIC listing pages that render on every request
+ * (/blog and /categories/[slug] read searchParams, so they can't use ISR).
+ * Results live in Next's Data Cache for 60s — same freshness as the ISR pages —
+ * so a cold serverless start doesn't have to open a Mongo connection.
+ * Don't use these in the admin dashboard (it must show fresh data).
+ */
+export const listPostsCached = (opts: ListPostsOptions = {}) =>
+  unstable_cache(() => listPosts(opts), ["listPosts", JSON.stringify(opts)], {
+    revalidate: 60,
+    tags: ["posts"],
+  })();
+
+export const countPostsCached = (filter: { category?: string; search?: string } = {}) =>
+  unstable_cache(() => countPosts(filter), ["countPosts", JSON.stringify(filter)], {
+    revalidate: 60,
+    tags: ["posts"],
+  })();
 
 export async function getPostBySlug(slug: string): Promise<IPost | null> {
   const fallback = (): IPost | null => {

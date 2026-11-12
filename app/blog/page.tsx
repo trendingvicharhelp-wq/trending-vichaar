@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { listPosts, countPosts } from "@/lib/posts";
+import { listPostsCached as listPosts, countPostsCached as countPosts } from "@/lib/posts";
 import { CATEGORY_LIST } from "@/lib/utils";
 import { PostCard } from "@/components/blog/PostCard";
 import { CategoryFilter } from "@/components/blog/CategoryFilter";

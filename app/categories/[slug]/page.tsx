@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CATEGORY_LIST } from "@/lib/utils";
-import { listPosts, countPosts } from "@/lib/posts";
+import { listPostsCached as listPosts, countPostsCached as countPosts } from "@/lib/posts";
 import { PostCard } from "@/components/blog/PostCard";
 import { Pagination } from "@/components/blog/Pagination";
 import { EmptyState } from "@/components/blog/EmptyState";
